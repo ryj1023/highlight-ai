@@ -2,6 +2,30 @@ import { OpenAIBooksResponse, YoutubeAPIItem, ReadwiseHighlights, BookData } fro
 const dotenv = require('dotenv');
 dotenv.config();
 
+export const getBookData = async (bookId: string) => {
+  const bookDataUrl = `https://readwise.io/api/v2/books/${bookId}`;
+  const response = await fetch(bookDataUrl, {
+    headers: {
+      Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
+    },
+  });
+  return await response.json() as BookData;
+};
+
+export const getBookHighlights = async (bookId: string) => {
+  const specificBookHighlights = `https://readwise.io/api/v2/highlights?book_id=${bookId}`;
+
+  const response = await fetch(specificBookHighlights, {
+    headers: {
+      Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
+    },
+  });
+
+
+  const { results } = await response.json() as ReadwiseHighlights;
+  return results;
+};
+
 export const getBookRecommendations = async (openai: any, quotes: string[], bookTitle: string): Promise<OpenAIBooksResponse> => {
 
   const prompt = `
@@ -91,29 +115,7 @@ export const getBookRecommendations = async (openai: any, quotes: string[], book
   return JSON.parse(result);
 };
 
-export const getBookHighlights = async (bookId: string) => {
-  const specificBookHighlights = `https://readwise.io/api/v2/highlights?book_id=${bookId}`;
 
-  const response = await fetch(specificBookHighlights, {
-    headers: {
-      Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
-    },
-  });
-
-
-  const { results } = await response.json() as ReadwiseHighlights;
-  return results;
-};
-
-export const getBookData = async (bookId: string) => {
-  const bookDataUrl = `https://readwise.io/api/v2/books/${bookId}`;
-  const response = await fetch(bookDataUrl, {
-    headers: {
-      Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
-    },
-  });
-  return await response.json() as BookData;
-};
 
 export const searchYouTubeVideos = async (searchTerm: string) => {
   const maxResults = 3;

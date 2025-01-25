@@ -18,8 +18,6 @@ router.get<{}, MessageResponse>('/highlights', async (req, res) => {
   try {
     const bookData = await getBookData(bookId);
     const highlights = await getBookHighlights(bookId); // Burn 47802645
-    // const highlights = await getBookHighlights(47802649); // Homo Deus 47802649
-    // const highlights = await getBookHighlights(47802668); // Stolen Focus 47802638
     if (!highlights) throw new Error('There was an issue fetching the data');
     const quotes = highlights.map((highlight) => highlight.text);
     const { books, quotesSummary, quotesInsights, youtubeSearchTerm } = await getBookRecommendations(openai, quotes, bookData?.title);
