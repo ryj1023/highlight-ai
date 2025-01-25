@@ -2,6 +2,7 @@ import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import * as exphbs from 'express-handlebars';
 
 import * as middlewares from './middlewares';
@@ -20,8 +21,7 @@ app.use(cors());
 app.use(express.json());
 app.use((req, res, next) => {
   res.setHeader(
-    "Content-Security-Policy",
-    // "img-src 'self' data: https://*.media-amazon.com;"
+    'Content-Security-Policy',
     "img-src 'self' data: https:;"
   );
   next();
@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 
 app.get<{}, MessageResponse>('/', (req, res) => {
   res.json({
-    message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄',
+    message: 'OK',
   });
 });
 

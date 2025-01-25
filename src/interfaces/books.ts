@@ -48,10 +48,6 @@ export interface Quote {
   quote: string[];
 }
 
-// export interface ReadwiseBookData {
-//   results: BookData;
-// }
-
 export interface BookData {
   title: string;
   author: string;
