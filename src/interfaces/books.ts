@@ -4,8 +4,27 @@ export interface Books {
   reason: string;
 }
 
-export interface Recommendations {
+export interface YoutubeAPIItem {
+  snippet: {
+    title: string;
+    description: string;
+  };
+  id: {
+    videoId: string;
+  };
+}
+
+export interface YoutubeItem {
+  title: string;
+  url: string;
+  description: string;
+}
+
+export interface OpenAIBooksResponse {
   books: Books[]
+  quotesInsights: string
+  quotesSummary: string
+  youtubeSearchTerm: string;
 }
 
 export interface ReadwiseHighlights {
@@ -27,4 +46,14 @@ export interface Highlight {
 
 export interface Quote {
   quote: string[];
+}
+
+// export interface ReadwiseBookData {
+//   results: BookData;
+// }
+
+export interface BookData {
+  title: string;
+  author: string;
+  cover_image_url: string;
 }

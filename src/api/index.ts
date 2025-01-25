@@ -1,77 +1,40 @@
 import express from 'express';
-// import { Configuration, OpenAIApi } from 'openai';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import OpenAI from 'openai';
 import MessageResponse from '../interfaces/MessageResponse';
-import auth from './auth';
-import books from './books';
-import { Recommendations, Highlight, ReadwiseHighlights } from '../interfaces/books';
+import { OpenAIBooksResponse, YoutubeAPIItem, ReadwiseHighlights, BookData } from '../interfaces/books';
 
 const router = express.Router();
 
-const reccommendedBooks = {
-  books: [
-    {
-      title: 'Harry Potter and the Goblet of Fire',
-      author: 'J.K. Rowling',
-      reason: "This book delves into the theme of choices and their consequences, highlighting the importance of personal agency and moral decisions in shaping one's identity."
-    },
-    {
-      title: 'The Alchemist',
-      author: 'Paulo Coelho',
-      reason: "Coelho's novel emphasizes the pursuit of happiness and the importance of following one's dreams, even in challenging circumstances, resonating with the idea of finding light in darkness."
-    },
-    {
-      title: 'The Perks of Being a Wallflower',
-      author: 'Stephen Chbosky',
-      reason: 'This book explores themes of love, acceptance, and self-worth, echoing the sentiment that we often accept the love we believe we deserve, as well as the importance of personal growth.'
-    },
-    {
-      title: 'The Fault in Our Stars',
-      author: 'John Green',
-      reason: "Green’s novel addresses the struggles and choices faced by young individuals in the face of adversity, encapsulating the idea that happiness can be found amidst life's darkest moments."
-    },
-    {
-      title: 'The Book Thief',
-      author: 'Markus Zusak',
-      reason: 'Set in Nazi Germany, this book illustrates the power of choices in the face of moral dilemmas, and the capacity for love and hope to thrive even in dire situations.'
-    }
-  ]
-}
-
-// const highlight: Highlight = {
-//     id: 839422371,
-//     text: 'In modern times, a full 75 percent of the nation’s health care costs stem directly from chronic conditions, with three of the most expensive being heart disease, cancer, and mental disorders.',
-//     note: '',
-//     location: 3159,
-//     location_type: 'location',
-//     highlighted_at: '2021-06-07T04:56:00.000000Z',
-//     url: null,
-//     color: 'blue',
-//     updated: '2025-01-15T03:40:13.422866Z',
-//     book_id: 47802668,
-//     // tags: [Array]
-
-// }
-
-const getBookRecommendations = async (openai: any, quotes: string[]): Promise<Recommendations> => {
+const getBookRecommendations = async (openai: any, quotes: string[], bookTitle: string): Promise<OpenAIBooksResponse> => {
 
   const prompt = `
-  Based on the following quotes from a book, recommend a series of books that share similar themes, styles, or ideas:
+  Based on the following quotes from a book, perform the following tasks:
   
+  1. Summarize the main themes or ideas expressed in the quotes.
+  2. Explain the value or life lessons that can be derived from the book's quotes, and how they relate to the book they came from.
+  3. Recommend a series of books that share similar themes, styles, or ideas. Make sure not to recommend the book with the title: ${bookTitle}.
+  4. Provide a search term query based on the central theme of the highlights. This search term will be used to find relevant YouTube videos.
+
   Quotes:
   ${quotes.map((quote, index) => `${index + 1}. "${quote}"`).join('\n')}
-  Please list 5 books and briefly explain why each book is recommended.
-`;
 
+  For task 1, please go into enough detail so that the summary is at least 5 sentences.
+  For task 2, please go into enough detail so that your explanation is at least 5 sentences.
+  For task 3, please list 5 books and briefly explain why each book is recommended.
+  For task 4, provide a concise and descriptive search term query that can be used in YouTube to find videos relevant to the themes or ideas.
+
+  `;
   // Call OpenAI API
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
-        content:
-          'You are a helpful assistant that recommends books based on given quotes.',
+        content: `
+          You are a helpful assistant that summarizes book highlights, provides insights about them, 
+          recommends books, and generates descriptive search terms for finding related YouTube videos.
+        `,
       },
       {
         role: 'user',
@@ -80,11 +43,19 @@ const getBookRecommendations = async (openai: any, quotes: string[]): Promise<Re
     ],
     functions: [
       {
-        name: 'recommend_books',
-        description: 'Recommend books based on a list of quotes',
+        name: 'recommend_books_and_insights',
+        description: 'Summarize highlights, explain their value, recommend books, and generate a YouTube search query based on a list of quotes',
         parameters: {
           type: 'object',
           properties: {
+            quotesSummary: {
+              type: 'string',
+              description: 'A summary of the main themes or ideas expressed in the quotes',
+            },
+            quotesInsights: {
+              type: 'string',
+              description: 'The value or life lessons derived from the highlights and how they relate to the book',
+            },
             books: {
               type: 'array',
               description: 'A list of recommended books',
@@ -107,56 +78,97 @@ const getBookRecommendations = async (openai: any, quotes: string[]): Promise<Re
                 required: ['title', 'author', 'reason'],
               },
             },
+            youtubeSearchTerm: {
+              type: 'string',
+              description: 'A descriptive search term query that can be used to find relevant YouTube videos',
+            },
           },
-          required: ['books'],
+          required: ['quotesSummary', 'quotesInsights', 'books', 'youtubeSearchTerm'],
         },
       },
     ],
-    function_call: { name: 'recommend_books' },
-    max_tokens: 1000,
+    function_call: { name: 'recommend_books_and_insights' },
+    max_tokens: 2000,
     temperature: 0.7,
   });
   const result = response?.choices?.[0]?.message?.function_call?.arguments;
   return JSON.parse(result);
-  // return reccommendedBooks;
 };
 
-const getBookHighlights = async () => {
-  const specificBookHighlights = 'https://readwise.io/api/v2/highlights?book_id=47802668';
-  const bookEndpoint = 'https://readwise.io/api/v2/books/' // get ids from results[].id
-  // const highlight = 'https://readwise.io/api/v2/books/'
-  // Make the GET request
+const getBookHighlights = async (bookId: string) => {
+  const specificBookHighlights = `https://readwise.io/api/v2/highlights?book_id=${bookId}`;
+
   const response = await fetch(specificBookHighlights, {
     headers: {
       Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
     },
   });
+
+
   const { results } = await response.json() as ReadwiseHighlights;
   return results;
 };
 
-router.get<{}, MessageResponse>('/my-library', async (req, res) => {
+const getBookData = async (bookId: string) => {
+  const bookDataUrl = `https://readwise.io/api/v2/books/${bookId}`;
+  const response = await fetch(bookDataUrl, {
+    headers: {
+      Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
+    },
+  });
+  return await response.json() as BookData;
+};
 
+const searchYouTubeVideos = async (searchTerm: string) => {
+  const maxResults = 3;
+  const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
+    searchTerm,
+  )}&type=video&maxResults=${maxResults}&key=${process.env.GOOGLE_API_KEY}`;
+
+  const response = await fetch(apiUrl);
+  const data = await response.json();
+  const items = data.items as YoutubeAPIItem[];
+  return items?.map((item) => ({
+    title: item.snippet.title,
+    description: item.snippet.description,
+    url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+  })) || [];
+};
+
+router.get<{}, MessageResponse>('/my-library', async (req, res) => {
+  // Burn 47802645
+  // Homo Deus 47802649
+  // Stolen Focus 47802638
+  const bookId = req.query?.bookId as string;
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY, // This is the default and can be omitted
   });
 
   try {
-    // Make the GET request
-    const highlights = await getBookHighlights();
+    const bookData = await getBookData(bookId);
+    const highlights = await getBookHighlights(bookId); // Burn 47802645
+    // const highlights = await getBookHighlights(47802649); // Homo Deus 47802649
+    // const highlights = await getBookHighlights(47802668); // Stolen Focus 47802638
     if (!highlights) throw new Error('There was an issue fetching the data');
     const quotes = highlights.map((highlight) => highlight.text);
-    const recommendations = await getBookRecommendations(openai, [quotes[0], quotes[1], quotes[2], quotes[3], quotes[4]]);
-    res.json({ data: recommendations, message: 'success' });
+    const { books, quotesSummary, quotesInsights, youtubeSearchTerm } = await getBookRecommendations(openai, quotes, bookData?.title);
+    const youTubeData = await searchYouTubeVideos(youtubeSearchTerm);
+    res.render('home', {
+      data: {
+        bookData,
+        bookRecommendations: books,
+        quotesSummary,
+        quotesInsights,
+        highlights,
+        youTubeData,
+      },
+    });
   } catch (e) {
-    console.log('e', e)
     res.json({
       message: 'there was an issue fetching the data',
     });
   }
 
 });
-router.use('/auth', auth);
-router.use('/books', books);
 
 export default router;
