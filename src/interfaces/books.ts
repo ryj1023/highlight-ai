@@ -52,4 +52,5 @@ export interface BookData {
   title: string;
   author: string;
   cover_image_url: string;
+  id: string;
 }

@@ -2,6 +2,17 @@ import { OpenAIBooksResponse, YoutubeAPIItem, ReadwiseHighlights, BookData } fro
 const dotenv = require('dotenv');
 dotenv.config();
 
+export const getAllBooksData = async () => {
+  const bookDataUrl = 'https://readwise.io/api/v2/books';
+  const response = await fetch(bookDataUrl, {
+    headers: {
+      Authorization: `Token ${process.env.READWISE_ACCESS_TOKEN}`,
+    },
+  });
+  const booksData = await response.json();
+  return booksData?.results || [] as BookData[];
+};
+
 export const getBookData = async (bookId: string) => {
   const bookDataUrl = `https://readwise.io/api/v2/books/${bookId}`;
   const response = await fetch(bookDataUrl, {
@@ -21,24 +32,19 @@ export const getBookHighlights = async (bookId: string) => {
     },
   });
 
-
   const { results } = await response.json() as ReadwiseHighlights;
   return results;
 };
 
 export const getBookRecommendations = async (openai: any, quotes: string[], bookTitle: string): Promise<OpenAIBooksResponse> => {
-
   const prompt = `
   Based on the following quotes from a book, perform the following tasks:
-  
   1. Summarize the main themes or ideas expressed in the quotes.
   2. Explain the value or life lessons that can be derived from the book's quotes, and how they relate to the book they came from.
   3. Recommend a series of books that share similar themes, styles, or ideas. Make sure not to recommend the book with the title: ${bookTitle}.
   4. Provide a search term query based on the central theme of the highlights. This search term will be used to find relevant YouTube videos.
-
   Quotes:
   ${quotes.map((quote, index) => `${index + 1}. "${quote}"`).join('\n')}
-
   For task 1, please go into enough detail so that the summary is at least 5 sentences.
   For task 2, please go into enough detail so that your explanation is at least 5 sentences.
   For task 3, please list 5 books and briefly explain why each book is recommended.

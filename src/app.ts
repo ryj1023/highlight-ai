@@ -14,6 +14,7 @@ require('dotenv').config();
 const app = express();
 
 app.engine('handlebars', exphbs.engine());
+app.use(express.static('public'));
 app.set('view engine', 'handlebars');
 app.use(morgan('dev'));
 app.use(helmet());
