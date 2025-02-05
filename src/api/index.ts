@@ -2,7 +2,8 @@ import express from 'express';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import OpenAI from 'openai';
 import MessageResponse from '../interfaces/MessageResponse';
-import { getBookRecommendations, getBookHighlights, getBookData, searchYouTubeVideos, getAllBooksData } from './helpers';
+import { getBookRecommendations, getBookHighlights, getBookData, searchYouTubeVideos, getAllBooksData, bookIdsToOmit } from './helpers';
+import { BookData } from '../interfaces/books';
 
 const router = express.Router();
 
@@ -35,9 +36,12 @@ router.get<{}, MessageResponse>('/highlights', async (req, res) => {
       });
     } else {
       const booksData = await getAllBooksData();
+      // const filteredBooks = booksData.map((book: BookData) => console.log('book', { id: book.id, title: book.title }));
+      const filteredBooks = booksData.filter((book: BookData) => !bookIdsToOmit.includes(+book.id));
+
       res.render('books', {
         data: {
-          booksData,
+          booksData: filteredBooks,
         },
       });
     }
