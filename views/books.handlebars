@@ -1,0 +1,21 @@
+
+
+
+
+   <!-- Books Section -->
+ <h2 style="display: flex; flex-wrap: wrap; justify-content: center;">My Books</h2>
+<div style="display: flex; flex-wrap: wrap; justify-content: center;">
+  {{#each data.booksData}}
+    <div class="section" 
+         style="text-align: center; width: 20%; margin-left: 10px; margin-right: 10px; box-sizing: border-box; padding: 10px; cursor: pointer;" 
+         onclick="navigateToHighlights('{{id}}')">
+        <div>
+          <h2 style="margin: 0;">{{title}}</h2>
+          <p style="margin: 0;">{{author}}</p>
+        </div>
+        <div>
+          <img height="300" src="{{cover_image_url}}" alt="{{title}}" style="max-width: 100%; border-radius: 5px;">
+        </div>
+    </div>
+  {{/each}}
+</div>

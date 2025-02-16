@@ -2,6 +2,8 @@ import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import * as exphbs from 'express-handlebars';
 
 import * as middlewares from './middlewares';
 import api from './api';
@@ -11,15 +13,24 @@ require('dotenv').config();
 
 const app = express();
 
-app.set('view engine', 'ejs');
+app.engine('handlebars', exphbs.engine());
+app.use(express.static('public'));
+app.set('view engine', 'handlebars');
 app.use(morgan('dev'));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "img-src 'self' data: https:;"
+  );
+  next();
+});
 
 app.get<{}, MessageResponse>('/', (req, res) => {
   res.json({
-    message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄',
+    message: 'OK',
   });
 });
 
