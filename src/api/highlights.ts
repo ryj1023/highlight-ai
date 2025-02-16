@@ -29,7 +29,7 @@ router.get<{}, EmojiResponse>('/', async (req, res) => {
     await page.waitForSelector('#ap_email'); // Amazon email field selector
 
     // // // Input email
-    await page.type('#ap_email', 'ryj1023@yahoo.com');
+    await page.type('#ap_email', 'null');
     await page.click('#continue');
 
     // navigate to password form
