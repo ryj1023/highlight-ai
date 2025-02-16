@@ -6,7 +6,7 @@ const router = express.Router();
 type EmojiResponse = string[];
 
 router.get<{}, EmojiResponse>('/', async (req, res) => {
-  console.log('🚀');
+  console.log('🚀!!');
   // Launch Puppeteer
   try {
     const browser = await puppeteer.launch({
